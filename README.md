@@ -1,6 +1,6 @@
 # oneslate_py_client
 
-This is a partial Oneslate client for interacting over HTTP with running Oneslate instances.  The module can be called directly from the command line or the module can be imported and reused in other Python scripts.
+The file oneslate.py is a partial Oneslate client for interacting over HTTP with running Oneslate instances.  The module can be called directly from the command line or the module can be imported and reused in other Python scripts.
 
 Basic functionality is included, such as:
  - adding a node
@@ -58,11 +58,13 @@ Arguments:
               confirm - do execute this (only used to confirm relegate_node actions)
 ```
 
-# Sample usage
+# Sample command line usage
+This example assumes you have downloaded and set up the Oneslate virtual machine, with it running and set up as accesssible from https://reqests-dev.example.com. The
+
 ```
-HOST=https://requests-dev6.1s.com
-USR=info@oneslate.com
-PASS=Admin2013
+HOST=https://requests-dev.example.com
+USR=bot@example.com
+PASS=<redacted>
 ./oneslate.py -s $HOST -u $USR -p $PASS -o cookies.txt add_node "Adding"
 ./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt add_node "Adding2"
 ./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt add_node "Adding3"
@@ -118,4 +120,6 @@ PASS=Admin2013
     ratings_time_series | [['0.0'], ['0.0'], ['0.0'], ['1.0'], ['0.0']]
 ./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt link_conclusion 54 53
 ```
- 
+
+# Sample reuse in Python
+The accompanying module, example_usage.py, exemplifies importing and reusing functions from oneslate.py.
