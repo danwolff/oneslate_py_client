@@ -18,8 +18,8 @@ The implementation is partial at this time, since it does not yet include some f
 # Script help output
 
 ```
-$ ./oneslate.py --help
-Handles actions for command line Oneslate interaction.
+dwolff@machine09707525:~/oneslate/oneslate_py_client$ ./oneslate.py --help
+Handles actions for command line or Pythonic Oneslate interaction.
 
 Usage:
   oneslate.py [options] add_node <title>
@@ -37,11 +37,16 @@ Usage:
 
 Options:
   -h, --help                          Show this screen.
-  -s <host>, --server <host>          URL of server [default: https://1s-dev.example.com].
-  -u <username>, --user <username>    Username to fall back in if no valid cookies [default: bot@example.com].
-  -p <password>, --pass <password>    Password to fall back on if no valid session from cookies provided.
-  -i <file>, --input=<file>           Cookies input file.
-  -o <file>, --output=<file>          Cookies output file.
+  -c <cfgfile>, --config <cfgfile>    Path to file with 3 lines: host, username,
+                                      and password to use if no valid input
+                                      cookies [default: os.cfg].
+  -s <host>, --server <host>          Server URL [default: https://1s-dev.example.com].
+  -u <username>, --user <username>    Username (e.g., email address) to fall
+                                      back in if no config file and no valid input cookies.
+  -p <password>, --pass <password>    Password to fall back on if no config
+                                      file and no valid input cookies.
+  -i <infile>, --input=<infile>       Cookies input file [default: cookies.txt].
+  -o <outfile>, --output=<outfile>    Cookies output file [default: cookies.txt].
   -r <validity>, --rating=<validity>  Rating to give node.
   -q, --quiet                         Print less text.
   --verbose                           Print more text.
@@ -59,28 +64,34 @@ Arguments:
 ```
 
 # Sample command line usage
-This example assumes you have downloaded and set up the Oneslate virtual machine, with it running and set up as accesssible from https://reqests-dev.example.com. The
+This example assumes you have downloaded and set up the Oneslate virtual machine, with it running and set up as accesssible from https://reqests-dev.example.com. It also assumes that os.cfg contains three lines contaiing a valid server, user, and password.
 
 ```
-HOST=https://requests-dev.example.com
-USR=bot@example.com
-PASS=<redacted>
-./oneslate.py -s $HOST -u $USR -p $PASS -o cookies.txt add_node "Adding"
-./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt add_node "Adding2"
-./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt add_node "Adding3"
-./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt search_nodes "Adding"
+./oneslate.py add_node "Adding"
+
+./oneslate.py add_node "Adding2"
+
+./oneslate.py add_node "Adding3"
+
+./oneslate.py search_nodes "Adding"
     Search results for node title: Adding
     node_id | node_title
     --------+-----------------------------------------------------------
     52      | Adding
     54      | Adding3
     53      | Adding2
-./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt rate_node 52 2
-./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt rate_node 53 3
-./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt edit_node 53 "Added node."
-./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt link_support 52 53
-./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt link_support 52 54
-./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt list_supports 52
+
+./oneslate.py rate_node 52 2
+
+./oneslate.py rate_node 53 3
+
+./oneslate.py edit_node 53 "Added node."
+
+./oneslate.py link_support 52 53
+
+./oneslate.py link_support 52 54
+
+./oneslate.py list_supports 52
     Results for:
      node_id: 52
      node_title: Adding
@@ -92,13 +103,15 @@ PASS=<redacted>
     --------+-----------------------------------------------------------
     53      | Added node.
     54      | Adding3
-./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt node_stats 54
+
+./oneslate.py node_stats 54
     node_id:           54
     node_title:        Adding3
     supports_count:    0
     conclusions_count: 1
     flags_count:       0
-./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt node_details 53
+
+./oneslate.py node_details 53
     Details for node_id: 53
     detail              | value
     --------------------+-----------------------------------------------
@@ -118,7 +131,8 @@ PASS=<redacted>
     communities         | []
     sources             | []
     ratings_time_series | [['0.0'], ['0.0'], ['0.0'], ['1.0'], ['0.0']]
-./oneslate.py -s $HOST -u $USR -p $PASS -i cookies.txt link_conclusion 54 53
+
+./oneslate.py link_conclusion 54 53
 ```
 
 # Sample reuse in Python
