@@ -13,12 +13,12 @@ Basic functionality is included, such as:
  - listing supporting nodes
  - editing node titles
 
-The implementation is partial at this time, since it does not yet include some features implemented in the Oneslate UI such as adding media nodes, unlinking supports from conclusions, pre-checking against cyclical dependency creation, submitting bias survey results upon node validity re-rating, flagging nodes, etc.  
+The implementation is partial at this time, since it does not yet include some features implemented in the Oneslate UI such as adding media nodes, unlinking supports from conclusions, pre-checking against cyclical dependency creation, submitting bias survey results upon node validity re-rating, flagging nodes, etc.
 
 # Script help output
 
 ```
-dwolff@machine09707525:~/oneslate/oneslate_py_client$ ./oneslate.py --help
+./oneslate.py --help
 Handles actions for command line or Pythonic Oneslate interaction.
 
 Usage:
@@ -37,20 +37,23 @@ Usage:
 
 Options:
   -h, --help                          Show this screen.
-  -c <cfgfile>, --config <cfgfile>    Path to file with 3 lines: host, username,
-                                      and password to use if no valid input
-                                      cookies [default: os.cfg].
+  -c <cfgfile>, --config <cfgfile>    Path to file with three lines: host,
+                                      username, and password.  Used if no
+                                      current session from cookies.  Overrides
+                                      arguments for these three params if also
+                                      provided at command line.
   -s <host>, --server <host>          Server URL [default: https://1s-dev.example.com].
-  -u <username>, --user <username>    Username (e.g., email address) to fall
-                                      back in if no config file and no valid input cookies.
-  -p <password>, --pass <password>    Password to fall back on if no config
-                                      file and no valid input cookies.
+  -u <username>, --user <username>    Username to fall back to if no config file
+  				      and no session from cookies
+				      [default: bot@example.com].
+  -p <password>, --pass <password>    Password to fall back to if no config
+                                      file and no session from cookies.
   -i <infile>, --input=<infile>       Cookies input file [default: cookies.txt].
   -o <outfile>, --output=<outfile>    Cookies output file [default: cookies.txt].
   -r <validity>, --rating=<validity>  Rating to give node.
   -q, --quiet                         Print less text.
   --verbose                           Print more text.
-  --debug                             Print debug level text.
+  --debug                             Print even more text, for debugging.
   --version                           Show version.
 
 Arguments:
@@ -64,75 +67,77 @@ Arguments:
 ```
 
 # Sample command line usage
-This example assumes you have downloaded and set up the Oneslate virtual machine, with it running and set up as accesssible from https://reqests-dev.example.com. It also assumes that os.cfg contains three lines contaiing a valid server, user, and password.
+This example assumes you have downloaded and set up the Oneslate virtual machine, with it running and set up as accesssible from https://requests-dev.example.com. It also assumes that os.cfg contains three lines specifying the valid server, user, and password.
 
 ```
-./oneslate.py add_node "Adding"
+./oneslate.py -c os.cfg add_node "Adding 71" 2>/dev/null
 
-./oneslate.py add_node "Adding2"
+./oneslate.py -c os.cfg add_node "Adding 72" 2>/dev/null
 
-./oneslate.py add_node "Adding3"
+./oneslate.py -c os.cfg add_node "Adding 73" 2>/dev/null
 
-./oneslate.py search_nodes "Adding"
-    Search results for node title: Adding
-    node_id | node_title
-    --------+-----------------------------------------------------------
-    52      | Adding
-    54      | Adding3
-    53      | Adding2
+./oneslate.py -c os.cfg search_nodes "Adding 7" 2>/dev/null
+	Search results for node title: Adding 7
+	node_id | node_title
+	--------+-----------------------------------------------------------
+	66      | Adding 72
+	65      | Adding 71
+	67      | Adding 73
 
-./oneslate.py rate_node 52 2
+./oneslate.py -c os.cfg rate_node 65 2 2>/dev/null
 
-./oneslate.py rate_node 53 3
+./oneslate.py -c os.cfg rate_node 66 3 2>/dev/null
 
-./oneslate.py edit_node 53 "Added node."
+./oneslate.py -c os.cfg edit_node 67 "Added node." 2>/dev/null
 
-./oneslate.py link_support 52 53
+./oneslate.py -c os.cfg link_support 65 66 2>/dev/null
 
-./oneslate.py link_support 52 54
+./oneslate.py -c os.cfg link_support 65 67 2>/dev/null
 
-./oneslate.py list_supports 52
-    Results for:
-     node_id: 52
-     node_title: Adding
+./oneslate.py -c os.cfg list_supports 65 2>/dev/null
 
-    Number of supports: 2
+./oneslate.py -c os.cfg list_supports 65 2>/dev/null
+	Results for:
+	 node_id: 65
+	 node_title: Adding 71
+	
+	Number of supports: 2
+	
+	Supports found:
+	node_id | supporting_node_title
+	--------+-----------------------------------------------------------
+	66      | Adding 72
+	67      | Added node.
+	
+./oneslate.py -c os.cfg node_stats 67 2>/dev/null
+	node_id:           67
+	node_title:        Added node.
+	supports_count:    0
+	conclusions_count: 1
+	flags_count:       0
 
-    Supports found:
-    node_id | supporting_node_title
-    --------+-----------------------------------------------------------
-    53      | Added node.
-    54      | Adding3
+./oneslate.py -c os.cfg node_details 67 2>/dev/null
+	Details for node_id: 67
+	detail              | value
+	--------------------+-----------------------------------------------
+	id                  | 67
+	title               | Added node.
+	rating              | None
+	explanation         | This node posted via automation in oneslate.py v0.0.1-dev.
+	media               | False
+	type                | None
+	flagged             | None
+	followed            | None
+	created_at          | August 17, 2018 01:38
+	username            | 40278369
+	rating_counts       | None
+	ratings_count       | 0
+	current_user_author | True
+	communities         | []
+	sources             | []
+	ratings_time_series | (not applicable)
 
-./oneslate.py node_stats 54
-    node_id:           54
-    node_title:        Adding3
-    supports_count:    0
-    conclusions_count: 1
-    flags_count:       0
-
-./oneslate.py node_details 53
-    Details for node_id: 53
-    detail              | value
-    --------------------+-----------------------------------------------
-    id                  | 53
-    title               | Added node.
-    rating              | 3
-    explanation         | This node posted via automation in oneslate.py v0.0.1-dev.
-    media               | False
-    type                | None
-    flagged             | None
-    followed            | None
-    created_at          | June 23, 2018 08:40
-    username            | 15973462
-    rating_counts       | [0, 0, 0, 1, 0]
-    ratings_count       | 1
-    current_user_author | True
-    communities         | []
-    sources             | []
-    ratings_time_series | [['0.0'], ['0.0'], ['0.0'], ['1.0'], ['0.0']]
-
-./oneslate.py link_conclusion 54 53
+./oneslate.py -c os.cfg link_conclusion 67 66 2>/dev/null
 ```
 
 # Sample reuse in Python

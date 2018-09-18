@@ -1,4 +1,5 @@
 #! /Users/dwolff/oneslate/py_client/py3env/bin/python3
+
 """
 Handles actions for command line or Pythonic Oneslate interaction.
 
@@ -18,15 +19,23 @@ Usage:
 
 Options:
   -h, --help                          Show this screen.
-  -s <host>, --server <host>          URL of server [default: https://1s-dev.example.com].
-  -u <username>, --user <username>    Username to fall back in if no valid cookies [default: bot@example.com].
-  -p <password>, --pass <password>    Password to fall back on if no valid session from cookies provided.
-  -i <file>, --input=<file>           Cookies input file.
-  -o <file>, --output=<file>          Cookies output file.
+  -c <cfgfile>, --config <cfgfile>    Path to file with three lines: host, 
+                                      username, and password.  Used if no
+                                      current session from cookies.  Overrides
+                                      arguments for these three params if also
+                                      provided at command line.
+  -s <host>, --server <host>          Server URL [default: https://1s-dev.example.com].
+  -u <username>, --user <username>    Username to fall back to if no config file
+  				      and no session from cookies
+				      [default: bot@example.com].
+  -p <password>, --pass <password>    Password to fall back to if no config
+                                      file and no session from cookies.
+  -i <infile>, --input=<infile>       Cookies input file [default: cookies.txt].
+  -o <outfile>, --output=<outfile>    Cookies output file [default: cookies.txt].
   -r <validity>, --rating=<validity>  Rating to give node.
   -q, --quiet                         Print less text.
   --verbose                           Print more text.
-  --debug                             Print debug level text.
+  --debug                             Print even more text, for debugging.
   --version                           Show version.
 
 Arguments:
@@ -49,8 +58,8 @@ from bs4 import BeautifulSoup
 from docopt import docopt
 
 # Configure certificate verification as needed
-cert_in_use = True                                                        # Verify for secure setups
-# cert_in_use = False                                                     # Do not verify (for insecure setups)
+cert_in_use = False                                                       # Do not verify (for insecure setups)
+# cert_in_use = True                                                      # Verify for secure setups
 # cert_in_use = '/Users/name/certs/charles-ssl-proxying-certificate.pem'  # Proxy for development
 
 def get_login_url(host):
@@ -65,16 +74,18 @@ def get_tree_url(host):
     tree_url = '{host}/trees'.format(**locals())
     return tree_url 
 
-def get_session(server, existing_cookies_file=None):
+def get_session(server, existing_cookies_file=None, user=None, passwd=None):
     login_url = get_login_url(server)
     session_to_use = requests.Session()
     # read cookies if available
-    if existing_cookies_file:
+    try:
         with open(existing_cookies_file, 'rb') as file_to_load:
             cookies = pickle.load(file_to_load)
             cookiejar = requests.cookies.RequestsCookieJar()
             cookiejar._cookies = cookies 
             session_to_use.cookies = cookiejar
+    except:
+        logging.warning("Could not load from cookies file. Continuing.")
     # load login URL
     page = session_to_use.get(login_url, timeout=1, verify=False)
     logging.debug(page.content)
@@ -95,8 +106,8 @@ def get_session(server, existing_cookies_file=None):
         payload = {
             'utf8': '✓',
             'authenticity_token': token,
-            'private_user[email]': 'info@oneslate.com',
-            'private_user[password]': 'Admin2013',
+            'private_user[email]': user,
+            'private_user[password]': passwd,
             'private_user[remember_me]': '1',
             'commit': 'Sign in',
         }
@@ -105,7 +116,11 @@ def get_session(server, existing_cookies_file=None):
         logging.debug("status code returned = " + str(r.status_code))
 
         xcsrf_soup = BeautifulSoup(r.content, 'html.parser')
-        xcsrf_token = xcsrf_soup.select('meta[name="csrf-token"]')[0]['content'] 
+        try:
+            xcsrf_token = xcsrf_soup.select('meta[name="csrf-token"]')[0]['content'] 
+        except:
+            logging.warning("No XCSRF token found when logging in! Are the "
+                            "username and password correct?")
     finally:
         logging.debug("xcsrf_token = {xcsrf_token}".format(**locals()))
     return session_to_use, xcsrf_token
@@ -434,14 +449,36 @@ def main(args):
     logging.debug("Got args:\n{args}".format(**locals()))
     cookies_input = args['--input']
     cookies_output = args['--output']
-    server = args['--server']
-    if args['--user'] == True:
+    if args['--user']:
         user = args['--user']
-    if args['--pass'] == True:
+    else:
+        user = None
+    if args['--server']:
+        server = args['--server']
+    if args['--pass']:
         password = args['--pass']
-
-    active_session, security_token = get_session(server, cookies_input)
-
+    else:
+        password = None
+    if args['--config']:
+        config_path = args['--config']
+        try:
+            with open(config_path, 'r') as config_file:
+                config = config_file.read().splitlines()
+        except:
+            logging.warning("Problem reading config file! Exiting.")
+        if len(config) == 3:
+            logging.debug("config = {config}".format(**locals()))
+            server = config[0]
+            user = config[1]
+            password = config[2]
+        else:
+            logging.warning("Config file was not 3 lines! Exiting.")
+            return None
+    else:
+        config = None
+    logging.debug("Got user={user} and password={password}".format(**locals()))
+    active_session, security_token = get_session(server, cookies_input, user, 
+                                                 password)
     if args['add_node'] == True:
         title_to_add = args['<title>']
         added_result = add_node(server, active_session, security_token, 
@@ -545,5 +582,5 @@ def main(args):
     return None
 
 if __name__ == "__main__":
-    arguments = docopt(__doc__, version='v1.0.1-dev')
+    arguments = docopt(__doc__, version='v1.0.2-dev')
     main(arguments)
